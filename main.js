@@ -27,7 +27,7 @@ const buildCard = (p, variant) => {
   media.className = "card-media"
 
   const img = document.createElement("img")
-  const url = safeUrl(p.imageUrl)
+  const url = safeUrl(p.coverUrl)
   if (url) img.src = url
   img.alt = safeText(p.name)
 
@@ -133,7 +133,8 @@ const loadProducts = async () => {
     all.push({
       id: doc.id,
       name: d.name,
-      imageUrl: d.imageUrl,
+      coverUrl: d.coverUrl,
+      coverPath: d.coverPath,
       priceOld: d.priceOld,
       priceNew: d.priceNew,
       isHighlight: Boolean(d.isHighlight),

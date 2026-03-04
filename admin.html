@@ -28,10 +28,11 @@
             <input id="name" class="input" type="text" autocomplete="off" />
           </label>
 
-          <label class="field">
-            <div class="label">URL Foto (1:1)</div>
-            <input id="imageUrl" class="input" type="url" autocomplete="off" />
-          </label>
+          <div class="field">
+            <div class="label">Foto Cover (1:1)</div>
+            <input id="coverFile" class="input" type="file" accept="image/*" />
+            <div id="coverPreview" class="img-preview"></div>
+          </div>
 
           <div class="row">
             <label class="field">
@@ -60,6 +61,15 @@
             <div class="label">Tanggal Penawaran Berakhir</div>
             <input id="offerEnds" class="input" type="text" autocomplete="off" placeholder="contoh: 30 Maret 2026" />
           </label>
+
+          <section class="field">
+            <div class="label">Gambar Slider (16:9)</div>
+            <div class="slider-controls">
+              <input id="sliderFile" class="input" type="file" accept="image/*" />
+              <button id="btnAddSlider" class="btn" type="button">Add</button>
+            </div>
+            <div id="sliderPreview" class="slider-preview"></div>
+          </section>
 
           <div class="actions">
             <button id="btnSave" class="btn btn-primary" type="submit">Simpan</button>

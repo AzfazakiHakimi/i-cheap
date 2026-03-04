@@ -1,5 +1,6 @@
-import { db } from "./firebase-config.js"
+import { db, storage } from "./firebase-config.js"
 import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js"
 
 const elForm = document.getElementById("formProduct")
 const elReset = document.getElementById("btnReset")
@@ -14,6 +15,12 @@ const elHi = document.getElementById("isHighlight")
 const elDetail = document.getElementById("detailText")
 const elOffer = document.getElementById("offerEnds")
 
+const elCoverFile = document.getElementById("coverFile")
+const elCoverPreview = document.getElementById("coverPreview")
+const elSliderFile = document.getElementById("sliderFile")
+const elBtnAddSlider = document.getElementById("btnAddSlider")
+const elSliderPreview = document.getElementById("sliderPreview")
+
 const safeText = (v) => (v === null || v === undefined ? "" : String(v))
 const safeUrl = (v) => (typeof v === "string" && v.trim() ? v.trim() : "")
 const safeNum = (v) => {
@@ -27,15 +34,100 @@ const fmtIdr = (n) => {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(x)
 }
 
+let coverState = { existing: null, file: null, previewUrl: "" }
+let sliderState = []
+let deleteCoverPath = ""
+let deleteSliderPaths = []
+
+const revokeUrl = (u) => { if (u) URL.revokeObjectURL(u) }
+
+const renderCoverPreview = () => {
+  elCoverPreview.innerHTML = ""
+  const src = coverState.file ? coverState.previewUrl : (coverState.existing ? coverState.existing.url : "")
+  if (!src) return
+
+  const card = document.createElement("div")
+  card.className = "preview-card square"
+
+  const img = document.createElement("img")
+  img.src = src
+  img.alt = ""
+
+  const x = document.createElement("button")
+  x.type = "button"
+  x.className = "preview-x"
+  x.textContent = "×"
+  x.addEventListener("click", () => {
+    if (coverState.file) {
+      revokeUrl(coverState.previewUrl)
+      coverState.file = null
+      coverState.previewUrl = ""
+      elCoverFile.value = ""
+    } else if (coverState.existing) {
+      deleteCoverPath = coverState.existing.path || ""
+      coverState.existing = null
+    }
+    renderCoverPreview()
+  })
+
+  card.appendChild(img)
+  card.appendChild(x)
+  elCoverPreview.appendChild(card)
+}
+
+const renderSliderPreview = () => {
+  elSliderPreview.innerHTML = ""
+  for (let i = 0; i < sliderState.length; i += 1) {
+    const it = sliderState[i]
+    const src = it.kind === "new" ? it.previewUrl : it.url
+    if (!src) continue
+
+    const card = document.createElement("div")
+    card.className = "preview-card wide"
+
+    const img = document.createElement("img")
+    img.src = src
+    img.alt = ""
+
+    const x = document.createElement("button")
+    x.type = "button"
+    x.className = "preview-x"
+    x.textContent = "×"
+    x.addEventListener("click", () => {
+      const cur = sliderState[i]
+      if (cur.kind === "new") revokeUrl(cur.previewUrl)
+      if (cur.kind === "existing" && cur.path) deleteSliderPaths = deleteSliderPaths.concat([cur.path])
+      sliderState = sliderState.slice(0, i).concat(sliderState.slice(i + 1))
+      renderSliderPreview()
+    })
+
+    card.appendChild(img)
+    card.appendChild(x)
+    elSliderPreview.appendChild(card)
+  }
+}
+
 const resetForm = () => {
   elId.value = ""
   elName.value = ""
-  elImg.value = ""
   elOld.value = ""
   elNew.value = ""
   elHi.checked = false
   elDetail.value = ""
   elOffer.value = ""
+
+  elCoverFile.value = ""
+  revokeUrl(coverState.previewUrl)
+  coverState = { existing: null, file: null, previewUrl: "" }
+  deleteCoverPath = ""
+
+  for (const it of sliderState) if (it.kind === "new") revokeUrl(it.previewUrl)
+  sliderState = []
+  deleteSliderPaths = []
+  elSliderFile.value = ""
+
+  renderCoverPreview()
+  renderSliderPreview()
 }
 
 const loadHighlightsCount = async (excludeId) => {
@@ -58,7 +150,9 @@ const getAll = async () => {
     out.push({
       id: d.id,
       name: x.name,
-      imageUrl: x.imageUrl,
+      coverUrl: x.coverUrl,
+      coverPath: x.coverPath,
+      slider: x.slider,
       priceOld: x.priceOld,
       priceNew: x.priceNew,
       isHighlight: Boolean(x.isHighlight),
@@ -76,12 +170,30 @@ const setFormFromDoc = async (id) => {
   const d = snap.data() || {}
   elId.value = id
   elName.value = safeText(d.name)
-  elImg.value = safeText(d.imageUrl)
   elOld.value = d.priceOld === null || d.priceOld === undefined ? "" : String(d.priceOld)
   elNew.value = d.priceNew === null || d.priceNew === undefined ? "" : String(d.priceNew)
   elHi.checked = Boolean(d.isHighlight)
   elDetail.value = safeText(d.detailText)
   elOffer.value = safeText(d.offerEnds)
+
+  deleteCoverPath = ""
+  deleteSliderPaths = []
+
+  const coverUrl = safeText(d.coverUrl).trim()
+  const coverPath = safeText(d.coverPath).trim()
+  coverState.existing = coverUrl && coverPath ? { url: coverUrl, path: coverPath } : null
+  revokeUrl(coverState.previewUrl)
+  coverState.file = null
+  coverState.previewUrl = ""
+  elCoverFile.value = ""
+  renderCoverPreview()
+
+  for (const it of sliderState) if (it.kind === "new") revokeUrl(it.previewUrl)
+  const arr = Array.isArray(d.slider) ? d.slider : []
+  sliderState = arr
+    .map((x) => ({ kind: "existing", path: safeText(x.path).trim(), url: safeText(x.url).trim() }))
+    .filter((x) => x.path && x.url)
+  renderSliderPreview()
 }
 
 const renderList = (items) => {
@@ -93,7 +205,7 @@ const renderList = (items) => {
     const th = document.createElement("div")
     th.className = "thumb"
     const img = document.createElement("img")
-    const url = safeUrl(p.imageUrl)
+    const url = safeUrl(p.coverUrl)
     if (url) img.src = url
     img.alt = safeText(p.name)
     th.appendChild(img)
@@ -145,7 +257,21 @@ const renderList = (items) => {
     btnDel.className = "btn btn-danger"
     btnDel.textContent = "Hapus"
     btnDel.addEventListener("click", async () => {
-      await deleteDoc(doc(db, "products", p.id))
+      const refDoc = doc(db, "products", p.id)
+      const snap = await getDoc(refDoc)
+      if (snap.exists()) {
+        const d = snap.data() || {}
+        const coverPath = safeText(d.coverPath).trim()
+        if (coverPath) await deleteObject(ref(storage, coverPath))
+
+        const arr = Array.isArray(d.slider) ? d.slider : []
+        for (const it of arr) {
+          const sp = safeText(it.path).trim()
+          if (sp) await deleteObject(ref(storage, sp))
+        }
+      }
+
+      await deleteDoc(refDoc)
       await refresh()
       resetForm()
     })
@@ -168,30 +294,47 @@ const refresh = async () => {
 
 elReset.addEventListener("click", resetForm)
 
+elCoverFile.addEventListener("change", () => {
+  const f = elCoverFile.files && elCoverFile.files[0] ? elCoverFile.files[0] : null
+  if (!f) return
+  if (coverState.file) revokeUrl(coverState.previewUrl)
+  coverState.file = f
+  coverState.previewUrl = URL.createObjectURL(f)
+  renderCoverPreview()
+})
+
+elBtnAddSlider.addEventListener("click", () => {
+  const f = elSliderFile.files && elSliderFile.files[0] ? elSliderFile.files[0] : null
+  if (!f) return
+  const u = URL.createObjectURL(f)
+  sliderState = sliderState.concat([{ kind: "new", file: f, previewUrl: u }])
+  elSliderFile.value = ""
+  renderSliderPreview()
+})
+
 elForm.addEventListener("submit", async (e) => {
   e.preventDefault()
 
-  const id = safeText(elId.value).trim()
+  const idRaw = safeText(elId.value).trim()
   const name = safeText(elName.value).trim()
-  const imageUrl = safeText(elImg.value).trim()
   const priceOld = safeNum(elOld.value)
   const priceNew = safeNum(elNew.value)
   const isHighlight = Boolean(elHi.checked)
   const detailText = safeText(elDetail.value).trim()
   const offerEnds = safeText(elOffer.value).trim()
 
+  const hasCover = Boolean(coverState.file || coverState.existing)
   if (!name) return
-  if (!imageUrl) return
   if (priceNew === null) return
+  if (!hasCover) return
 
   if (isHighlight) {
-    const count = await loadHighlightsCount(id || null)
+    const count = await loadHighlightsCount(idRaw || null)
     if (count >= 3) return
   }
 
-  const payload = {
+  const basePayload = {
     name,
-    imageUrl,
     priceOld,
     priceNew,
     isHighlight,
@@ -200,10 +343,56 @@ elForm.addEventListener("submit", async (e) => {
     updatedAt: serverTimestamp()
   }
 
-  if (id) {
-    await updateDoc(doc(db, "products", id), payload)
+  let id = idRaw
+  if (!id) {
+    const created = await addDoc(collection(db, "products"), basePayload)
+    id = created.id
   } else {
-    await addDoc(collection(db, "products"), payload)
+    await updateDoc(doc(db, "products", id), basePayload)
+  }
+
+  const patch = {}
+
+  if (coverState.file) {
+    const ext = (coverState.file.name.split(".").pop() || "jpg").toLowerCase()
+    const path = `products/${id}/cover-${crypto.randomUUID()}.${ext}`
+    const r = ref(storage, path)
+    await uploadBytes(r, coverState.file)
+    const url = await getDownloadURL(r)
+    patch.coverPath = path
+    patch.coverUrl = url
+
+    if (coverState.existing && coverState.existing.path) {
+      await deleteObject(ref(storage, coverState.existing.path))
+    }
+  } else if (!coverState.existing && deleteCoverPath) {
+    await deleteObject(ref(storage, deleteCoverPath))
+    patch.coverPath = ""
+    patch.coverUrl = ""
+  }
+
+  const sliderExisting = sliderState.filter((x) => x.kind === "existing").map((x) => ({ path: x.path, url: x.url }))
+  const sliderNew = sliderState.filter((x) => x.kind === "new")
+
+  const uploaded = []
+  for (const it of sliderNew) {
+    const f = it.file
+    const ext = (f.name.split(".").pop() || "jpg").toLowerCase()
+    const path = `products/${id}/slider/${crypto.randomUUID()}.${ext}`
+    const r = ref(storage, path)
+    await uploadBytes(r, f)
+    const url = await getDownloadURL(r)
+    uploaded.push({ path, url })
+  }
+
+  if (deleteSliderPaths.length) {
+    for (const p of deleteSliderPaths) await deleteObject(ref(storage, p))
+  }
+
+  patch.slider = sliderExisting.concat(uploaded)
+
+  if (Object.keys(patch).length) {
+    await updateDoc(doc(db, "products", id), patch)
   }
 
   await refresh()

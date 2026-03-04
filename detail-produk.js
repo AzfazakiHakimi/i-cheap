@@ -8,6 +8,8 @@ const elNew = document.getElementById("newPrice")
 const elDetail = document.getElementById("detailText")
 const elOffer = document.getElementById("offerEnds")
 const elBtn = document.getElementById("btnOrder")
+const elTrack = document.getElementById("sliderTrack")
+const elDots = document.getElementById("sliderDots")
 
 const fmtIdr = (n) => {
   const x = Number(n)
@@ -37,7 +39,7 @@ const load = async () => {
   const d = snap.data() || {}
   const name = safeText(d.name)
 
-  const imgUrl = safeUrl(d.imageUrl)
+  const imgUrl = safeUrl(d.coverUrl)
   if (imgUrl) elImg.src = imgUrl
   elImg.alt = name
 
@@ -50,4 +52,54 @@ const load = async () => {
   elBtn.href = toWhatsApp(name)
 }
 
+const renderDots = (n) => {
+  elDots.innerHTML = ""
+  if (!n || n < 2) return
+  for (let i = 0; i < n; i += 1) {
+    const d = document.createElement("div")
+    d.className = "dot" + (i === 0 ? " active" : "")
+    elDots.appendChild(d)
+  }
+}
+
+const setActiveDot = (idx) => {
+  const dots = elDots.querySelectorAll(".dot")
+  for (let i = 0; i < dots.length; i += 1) {
+    if (i === idx) dots[i].classList.add("active")
+    else dots[i].classList.remove("active")
+  }
+}
+
+const renderSlider = (items) => {
+  elTrack.innerHTML = ""
+  elDots.innerHTML = ""
+  if (!items || !items.length) return
+
+  for (const it of items) {
+    const s = document.createElement("div")
+    s.className = "slide"
+    const img = document.createElement("img")
+    img.alt = ""
+    const u = safeUrl(it.url)
+    if (u) img.src = u
+    s.appendChild(img)
+    elTrack.appendChild(s)
+  }
+
+  renderDots(items.length)
+
+  let lastIdx = 0
+  elTrack.addEventListener("scroll", () => {
+    const w = elTrack.clientWidth
+    if (!w) return
+    const idx = Math.round(elTrack.scrollLeft / w)
+    if (idx === lastIdx) return
+    lastIdx = idx
+    setActiveDot(idx)
+  })
+}
+
 load()
+
+const slider = Array.isArray(d.slider) ? d.slider : []
+renderSlider(slider)
