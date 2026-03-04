@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin</title>
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="back" href="index.html">Kembali</a>
+      <div class="title">Admin</div>
+      <div class="spacer"></div>
+    </header>
+
+    <main class="container">
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Tambah / Edit Produk</div>
+          <button id="btnReset" class="btn btn-ghost" type="button">Reset</button>
+        </div>
+
+        <form id="formProduct" class="form">
+          <input id="productId" type="hidden" value="" />
+
+          <label class="field">
+            <div class="label">Nama Barang</div>
+            <input id="name" class="input" type="text" autocomplete="off" />
+          </label>
+
+          <label class="field">
+            <div class="label">URL Foto (1:1)</div>
+            <input id="imageUrl" class="input" type="url" autocomplete="off" />
+          </label>
+
+          <div class="row">
+            <label class="field">
+              <div class="label">Harga Ori</div>
+              <input id="priceOld" class="input" type="number" inputmode="numeric" />
+            </label>
+
+            <label class="field">
+              <div class="label">Harga Jual</div>
+              <input id="priceNew" class="input" type="number" inputmode="numeric" />
+            </label>
+          </div>
+
+          <label class="field switch">
+            <input id="isHighlight" type="checkbox" />
+            <span class="switch-ui"></span>
+            <span class="switch-text">Jadikan Highlight (maks 3)</span>
+          </label>
+
+          <label class="field">
+            <div class="label">Detail Produk (paragraf)</div>
+            <textarea id="detailText" class="textarea" rows="5"></textarea>
+          </label>
+
+          <label class="field">
+            <div class="label">Tanggal Penawaran Berakhir</div>
+            <input id="offerEnds" class="input" type="text" autocomplete="off" placeholder="contoh: 30 Maret 2026" />
+          </label>
+
+          <div class="actions">
+            <button id="btnSave" class="btn btn-primary" type="submit">Simpan</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Daftar Produk</div>
+        </div>
+        <div id="list" class="list"></div>
+      </section>
+    </main>
+
+    <script src="admin.js" type="module"></script>
+  </body>
+</html>
