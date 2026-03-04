@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Detail Produk</title>
+    <link rel="stylesheet" href="detail-produk.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="back" href="index.html">Kembali</a>
+      <div class="title">Detail Produk</div>
+      <div class="spacer"></div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <div class="media">
+          <img id="imgProduct" alt="" />
+        </div>
+        <div class="body">
+          <div id="nameProduct" class="name"></div>
+          <div class="prices">
+            <div id="oldPrice" class="old"></div>
+            <div id="newPrice" class="new"></div>
+          </div>
+          <div class="divider"></div>
+          <div id="detailText" class="detail"></div>
+          <div class="meta">
+            <div class="meta-label">Penawaran berakhir</div>
+            <div id="offerEnds" class="meta-value"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <a id="btnOrder" class="fab" href="javascript:void(0)">pesan</a>
+
+    <script src="detail-produk.js" type="module"></script>
+  </body>
+</html>
