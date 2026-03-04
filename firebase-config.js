@@ -2,12 +2,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"
 
 const firebaseConfig = {
-  apiKey: "ISI_API_KEY",
-  authDomain: "ISI_AUTH_DOMAIN",
-  projectId: "ISI_PROJECT_ID",
-  storageBucket: "ISI_STORAGE_BUCKET",
-  messagingSenderId: "ISI_MESSAGING_SENDER_ID",
-  appId: "ISI_APP_ID"
+  apiKey: "AIzaSyDJawFJ70eu4Y3_ktRtTo-5wLcTUiRJcr4",
+  authDomain: "i-cheap.firebaseapp.com",
+  projectId: "i-cheap",
+  storageBucket: "i-cheap.firebasestorage.app",
+  messagingSenderId: "747974380579",
+  appId: "1:747974380579:web:bc80b6ba4247e34c8f3596"
 }
 
 const app = initializeApp(firebaseConfig)
