@@ -19,6 +19,20 @@ const fmtIdr = (n) => {
 
 const safeText = (v) => (v === null || v === undefined ? "" : String(v))
 const safeUrl = (v) => (typeof v === "string" && v.trim() ? v.trim() : "")
+const fmtIdDate = (v) => {
+  const s = safeText(v).trim()
+  if (!s) return ""
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const y = Number(s.slice(0, 4))
+    const m = Number(s.slice(5, 7))
+    const d = Number(s.slice(8, 10))
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return ""
+    const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
+    if (m < 1 || m > 12) return ""
+    return `${d} ${months[m - 1]} ${y}`
+  }
+  return s
+}
 
 const qs = new URLSearchParams(location.search)
 const id = qs.get("id") || ""
@@ -47,7 +61,7 @@ const load = async () => {
   elOld.textContent = fmtIdr(d.priceOld)
   elNew.textContent = fmtIdr(d.priceNew)
   elDetail.textContent = safeText(d.detailText)
-  elOffer.textContent = safeText(d.offerEnds)
+  elOffer.textContent = fmtIdDate(d.offerEnds)
 
   elBtn.href = toWhatsApp(name)
   const slider = Array.isArray(d.slider) ? d.slider : []

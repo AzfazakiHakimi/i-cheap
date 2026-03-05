@@ -27,6 +27,31 @@ const safeNum = (v) => {
   return Number.isFinite(x) ? x : null
 }
 
+const toIsoDate = (v) => {
+  const s = safeText(v).trim()
+  if (!s) return ""
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+
+  const parts = s.split(/\s+/).filter(Boolean)
+  if (parts.length !== 3) return ""
+
+  const dd = Number(parts[0])
+  const yy = Number(parts[2])
+  if (!Number.isFinite(dd) || !Number.isFinite(yy)) return ""
+
+  const m = parts[1].toLowerCase()
+  const months = {
+    januari: 1, februari: 2, maret: 3, april: 4, mei: 5, juni: 6,
+    juli: 7, agustus: 8, september: 9, oktober: 10, november: 11, desember: 12
+  }
+  const mm = months[m]
+  if (!mm) return ""
+
+  const d2 = String(dd).padStart(2, "0")
+  const m2 = String(mm).padStart(2, "0")
+  return `${yy}-${m2}-${d2}`
+}
+
 const fmtIdr = (n) => {
   const x = Number(n)
   if (!Number.isFinite(x)) return ""
@@ -173,7 +198,7 @@ const setFormFromDoc = async (id) => {
   elNew.value = d.priceNew === null || d.priceNew === undefined ? "" : String(d.priceNew)
   elHi.checked = Boolean(d.isHighlight)
   elDetail.value = safeText(d.detailText)
-  elOffer.value = safeText(d.offerEnds)
+  elOffer.value = toIsoDate(d.offerEnds)
 
   deleteCoverPath = ""
   deleteSliderPaths = []
