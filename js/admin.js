@@ -15,11 +15,6 @@ const elDetail = document.getElementById("detailText")
 const elOffer = document.getElementById("offerEnds")
 const elOfferText = document.getElementById("offerEndsText")
 
-if (elOfferText && elOffer && typeof elOffer.showPicker === "function") {
-  elOfferText.addEventListener("click", () => elOffer.showPicker())
-  elOfferText.addEventListener("focus", () => elOffer.showPicker())
-}
-
 if (elOffer && elOfferText) {
   elOffer.addEventListener("change", () => {
     elOfferText.value = toIdSlash(elOffer.value)
@@ -79,6 +74,14 @@ const fmtIdr = (n) => {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(x)
 }
 
+const wireImg = (img) => {
+  img.loading = "lazy"
+  img.decoding = "async"
+  img.addEventListener("error", () => {
+    img.removeAttribute("src")
+  })
+}
+
 let coverState = { existing: null, file: null, previewUrl: "" }
 let sliderState = []
 let deleteCoverPath = ""
@@ -97,6 +100,7 @@ const renderCoverPreview = () => {
   const img = document.createElement("img")
   img.src = src
   img.alt = ""
+  wireImg(img)
 
   const x = document.createElement("button")
   x.type = "button"
@@ -133,6 +137,7 @@ const renderSliderPreview = () => {
     const img = document.createElement("img")
     img.src = src
     img.alt = ""
+    wireImg(img)
 
     const x = document.createElement("button")
     x.type = "button"
@@ -256,6 +261,7 @@ const renderList = (items) => {
     const url = safeUrl(p.coverUrl)
     if (url) img.src = url
     img.alt = safeText(p.name)
+    wireImg(img)
     th.appendChild(img)
 
     const info = document.createElement("div")
@@ -322,6 +328,7 @@ const renderList = (items) => {
       await deleteDoc(refDoc)
       await refresh()
       resetForm()
+      alert("Produk berhasil dihapus")
     })
 
     actions.appendChild(btnEdit)
@@ -362,6 +369,7 @@ elBtnAddSlider.addEventListener("click", () => {
 
 elForm.addEventListener("submit", async (e) => {
   e.preventDefault()
+  let savedOk = false
 
   const idRaw = safeText(elId.value).trim()
   const name = safeText(elName.value).trim()
@@ -446,6 +454,7 @@ elForm.addEventListener("submit", async (e) => {
 
   await refresh()
   resetForm()
+  alert("Produk berhasil disimpan")
 })
 
 refresh()

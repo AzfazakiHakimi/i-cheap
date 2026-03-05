@@ -31,6 +31,10 @@ const buildCard = (p, variant) => {
   if (url) img.src = url
   img.alt = safeText(p.name)
 
+  img.loading = "lazy"
+  img.decoding = "async"
+  img.addEventListener("error", () => img.removeAttribute("src"))
+
   media.appendChild(img)
 
   const body = document.createElement("div")

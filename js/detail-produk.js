@@ -57,6 +57,10 @@ const load = async () => {
   if (imgUrl) elImg.src = imgUrl
   elImg.alt = name
 
+  elImg.loading = "lazy"
+  elImg.decoding = "async"
+  elImg.addEventListener("error", () => elImg.removeAttribute("src"))
+
   elName.textContent = name
   elOld.textContent = fmtIdr(d.priceOld)
   elNew.textContent = fmtIdr(d.priceNew)
@@ -106,6 +110,9 @@ const renderSlider = (items) => {
     const u = safeUrl(it.url)
     if (u) img.src = u
     s.appendChild(img)
+    img.loading = "lazy"
+    img.decoding = "async"
+    img.addEventListener("error", () => img.removeAttribute("src"))
     elTrack.appendChild(s)
   }
 
