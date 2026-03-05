@@ -1,6 +1,5 @@
-import { db, storage } from "./firebase-config.js"
+import { db } from "./firebase-config.js"
 import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js"
 
 const elForm = document.getElementById("formProduct")
 const elReset = document.getElementById("btnReset")
@@ -26,6 +25,14 @@ const elCoverPreview = document.getElementById("coverPreview")
 const elSliderFile = document.getElementById("sliderFile")
 const elBtnAddSlider = document.getElementById("btnAddSlider")
 const elSliderPreview = document.getElementById("sliderPreview")
+
+const fileToDataUrl = (file) => {
+  new Promise((resolve) => {
+    const r = new FileReader()
+    r.onload = () => resolve(typeof r.result === "string" ? r.result : "")
+    r.readAsDataURL(file)
+  })
+}
 
 const safeText = (v) => (v === null || v === undefined ? "" : String(v))
 const safeUrl = (v) => (typeof v === "string" && v.trim() ? v.trim() : "")
@@ -82,16 +89,14 @@ const wireImg = (img) => {
   })
 }
 
-let coverState = { existing: null, file: null, previewUrl: "" }
+let coverState = { existingUrl: "", file: null, previewUrl: "" }
 let sliderState = []
-let deleteCoverPath = ""
-let deleteSliderPaths = []
 
 const revokeUrl = (u) => { if (u) URL.revokeObjectURL(u) }
 
 const renderCoverPreview = () => {
   elCoverPreview.innerHTML = ""
-  const src = coverState.file ? coverState.previewUrl : (coverState.existing ? coverState.existing.url : "")
+  const src = coverState.file ? coverState.previewUrl : coverState.existingUrl
   if (!src) return
 
   const card = document.createElement("div")
@@ -112,9 +117,8 @@ const renderCoverPreview = () => {
       coverState.file = null
       coverState.previewUrl = ""
       elCoverFile.value = ""
-    } else if (coverState.existing) {
-      deleteCoverPath = coverState.existing.path || ""
-      coverState.existing = null
+    } else if (coverState.existingUrl) {
+      coverState.existingUrl = ""
     }
     renderCoverPreview()
   })
@@ -146,7 +150,6 @@ const renderSliderPreview = () => {
     x.addEventListener("click", () => {
       const cur = sliderState[i]
       if (cur.kind === "new") revokeUrl(cur.previewUrl)
-      if (cur.kind === "existing" && cur.path) deleteSliderPaths = deleteSliderPaths.concat([cur.path])
       sliderState = sliderState.slice(0, i).concat(sliderState.slice(i + 1))
       renderSliderPreview()
     })
@@ -233,8 +236,7 @@ const setFormFromDoc = async (id) => {
   deleteSliderPaths = []
 
   const coverUrl = safeText(d.coverUrl).trim()
-  const coverPath = safeText(d.coverPath).trim()
-  coverState.existing = coverUrl && coverPath ? { url: coverUrl, path: coverPath } : null
+  coverState.existingUrl = coverUrl
   revokeUrl(coverState.previewUrl)
   coverState.file = null
   coverState.previewUrl = ""
@@ -244,8 +246,11 @@ const setFormFromDoc = async (id) => {
   for (const it of sliderState) if (it.kind === "new") revokeUrl(it.previewUrl)
   const arr = Array.isArray(d.slider) ? d.slider : []
   sliderState = arr
-    .map((x) => ({ kind: "existing", path: safeText(x.path).trim(), url: safeText(x.url).trim() }))
-    .filter((x) => x.path && x.url)
+    .map((x) => {
+      if (typeof x === "string") return { kind: "existing", url: safeText(x).trim() }
+      return { kind: "existing", url: safeText(x && x.url).trim() }
+    })
+    .filter((x) => x.url)
   renderSliderPreview()
 }
 
@@ -316,12 +321,9 @@ const renderList = (items) => {
       if (snap.exists()) {
         const d = snap.data() || {}
         const coverPath = safeText(d.coverPath).trim()
-        if (coverPath) await deleteObject(ref(storage, coverPath))
-
         const arr = Array.isArray(d.slider) ? d.slider : []
         for (const it of arr) {
           const sp = safeText(it.path).trim()
-          if (sp) await deleteObject(ref(storage, sp))
         }
       }
 
@@ -379,7 +381,7 @@ elForm.addEventListener("submit", async (e) => {
   const detailText = safeText(elDetail.value).trim()
   const offerEnds = safeText(elOffer ? elOffer.value : "").trim()
 
-  const hasCover = Boolean(coverState.file || coverState.existing)
+  const hasCover = Boolean(coverState.file || coverState.existingUrl)
   if (!name) return
   if (priceOld !== null && priceOld < 0) return
   if (priceNew < 0) return
@@ -411,42 +413,29 @@ elForm.addEventListener("submit", async (e) => {
   const patch = {}
 
   if (coverState.file) {
-    const ext = (coverState.file.name.split(".").pop() || "jpg").toLowerCase()
-    const path = `products/${id}/cover-${crypto.randomUUID()}.${ext}`
-    const r = ref(storage, path)
-    await uploadBytes(r, coverState.file)
-    const url = await getDownloadURL(r)
-    patch.coverPath = path
+    const url = await fileToDataUrl(coverState.file)
     patch.coverUrl = url
-
-    if (coverState.existing && coverState.existing.path) {
-      await deleteObject(ref(storage, coverState.existing.path))
-    }
-  } else if (!coverState.existing && deleteCoverPath) {
-    await deleteObject(ref(storage, deleteCoverPath))
     patch.coverPath = ""
+  } else if (!coverState.existingUrl) {
     patch.coverUrl = ""
+    patch.coverPath = ""
   }
 
-  const sliderExisting = sliderState.filter((x) => x.kind === "existing").map((x) => ({ path: x.path, url: x.url }))
+  const sliderExisting = sliderState
+    .filter((x) => x.kind === "existing")
+    .map((x) => ({ url: x.url }))
+
   const sliderNew = sliderState.filter((x) => x.kind === "new")
 
   const uploaded = []
   for (const it of sliderNew) {
-    const f = it.file
-    const ext = (f.name.split(".").pop() || "jpg").toLowerCase()
-    const path = `products/${id}/slider/${crypto.randomUUID()}.${ext}`
-    const r = ref(storage, path)
-    await uploadBytes(r, f)
-    const url = await getDownloadURL(r)
-    uploaded.push({ path, url })
-  }
-
-  if (deleteSliderPaths.length) {
-    for (const p of deleteSliderPaths) await deleteObject(ref(storage, p))
+    const url = await fileToDataUrl(it.file)
+    uploaded.push({ url })
   }
 
   patch.slider = sliderExisting.concat(uploaded)
+
+  await updateDoc(doc(db, "products", id), patch)
 
   if (Object.keys(patch).length) {
     await updateDoc(doc(db, "products", id), patch)

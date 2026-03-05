@@ -107,7 +107,7 @@ const renderSlider = (items) => {
     s.className = "slide"
     const img = document.createElement("img")
     img.alt = ""
-    const u = safeUrl(it.url)
+    const u = safeUrl(it && (it.url || it))
     if (u) img.src = u
     s.appendChild(img)
     img.loading = "lazy"
