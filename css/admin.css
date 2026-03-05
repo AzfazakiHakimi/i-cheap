@@ -118,6 +118,21 @@ a{color:inherit;text-decoration:none}
   background:rgba(15,17,23,.82);
 }
 
+input[type="date"]{
+  cursor:pointer;
+  position:relative;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator{
+  opacity:.9;
+  cursor:pointer;
+  filter:invert(75%) sepia(18%) saturate(650%) hue-rotate(160deg);
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator{
+  opacity:1;
+}
+
 .textarea{resize:vertical;min-height:120px}
 
 .row{

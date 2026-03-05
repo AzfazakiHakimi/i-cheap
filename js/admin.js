@@ -13,6 +13,18 @@ const elNew = document.getElementById("priceNew")
 const elHi = document.getElementById("isHighlight")
 const elDetail = document.getElementById("detailText")
 const elOffer = document.getElementById("offerEnds")
+const elOfferText = document.getElementById("offerEndsText")
+
+if (elOfferText && elOffer && typeof elOffer.showPicker === "function") {
+  elOfferText.addEventListener("click", () => elOffer.showPicker())
+  elOfferText.addEventListener("focus", () => elOffer.showPicker())
+}
+
+if (elOffer && elOfferText) {
+  elOffer.addEventListener("change", () => {
+    elOfferText.value = toIdSlash(elOffer.value)
+  })
+}
 
 const elCoverFile = document.getElementById("coverFile")
 const elCoverPreview = document.getElementById("coverPreview")
@@ -50,6 +62,15 @@ const toIsoDate = (v) => {
   const d2 = String(dd).padStart(2, "0")
   const m2 = String(mm).padStart(2, "0")
   return `${yy}-${m2}-${d2}`
+}
+
+const toIdSlash = (iso) => {
+  const s = safeText(iso).trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return ""
+  const dd = s.slice(8, 10)
+  const mm = s.slice(5, 7)
+  const yy = s.slice(0, 4)
+  return `${dd}/${mm}/${yy}`
 }
 
 const fmtIdr = (n) => {
@@ -138,7 +159,8 @@ const resetForm = () => {
   elNew.value = ""
   elHi.checked = false
   elDetail.value = ""
-  elOffer.value = ""
+  if (elOffer) elOffer.value = ""
+  if (elOfferText) elOfferText.value = ""
 
   elCoverFile.value = ""
   revokeUrl(coverState.previewUrl)
@@ -198,7 +220,9 @@ const setFormFromDoc = async (id) => {
   elNew.value = d.priceNew === null || d.priceNew === undefined ? "" : String(d.priceNew)
   elHi.checked = Boolean(d.isHighlight)
   elDetail.value = safeText(d.detailText)
-  elOffer.value = toIsoDate(d.offerEnds)
+  const iso = toIsoDate(d.offerEnds)
+  if (elOffer) elOffer.value = iso
+  if (elOfferText) elOfferText.value = toIdSlash(iso)
 
   deleteCoverPath = ""
   deleteSliderPaths = []
@@ -345,11 +369,12 @@ elForm.addEventListener("submit", async (e) => {
   const priceNew = safeNum(elNew.value)
   const isHighlight = Boolean(elHi.checked)
   const detailText = safeText(elDetail.value).trim()
-  const offerEnds = safeText(elOffer.value).trim()
+  const offerEnds = safeText(elOffer ? elOffer.value : "").trim()
 
   const hasCover = Boolean(coverState.file || coverState.existing)
   if (!name) return
-  if (priceNew === null) return
+  if (priceOld !== null && priceOld < 0) return
+  if (priceNew < 0) return
   if (!hasCover) return
 
   if (isHighlight) {

@@ -37,12 +37,12 @@
           <div class="row">
             <label class="field">
               <div class="label">Harga Ori</div>
-              <input id="priceOld" class="input" type="number" inputmode="numeric" />
+              <input id="priceOld" class="input" type="number" inputmode="numeric" min="0" />
             </label>
 
             <label class="field">
               <div class="label">Harga Jual</div>
-              <input id="priceNew" class="input" type="number" inputmode="numeric" />
+              <input id="priceNew" class="input" type="number" inputmode="numeric" min="0" />
             </label>
           </div>
 
@@ -59,7 +59,8 @@
 
           <label class="field">
             <div class="label">Tanggal Penawaran Berakhir</div>
-            <input id="offerEnds" class="input" type="date" />
+            <input id="offerEndsText" class="input" type="text" inputmode="numeric" readonly />
+            <input id="offerEnds" type="date" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0" />
           </label>
 
           <section class="field">
