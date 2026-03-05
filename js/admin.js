@@ -8,7 +8,6 @@ const elList = document.getElementById("list")
 
 const elId = document.getElementById("productId")
 const elName = document.getElementById("name")
-const elImg = document.getElementById("imageUrl")
 const elOld = document.getElementById("priceOld")
 const elNew = document.getElementById("priceNew")
 const elHi = document.getElementById("isHighlight")

@@ -50,14 +50,23 @@ const load = async () => {
   elOffer.textContent = safeText(d.offerEnds)
 
   elBtn.href = toWhatsApp(name)
+  const slider = Array.isArray(d.slider) ? d.slider : []
+  renderSlider(slider)
 }
 
 const renderDots = (n) => {
   elDots.innerHTML = ""
   if (!n || n < 2) return
   for (let i = 0; i < n; i += 1) {
-    const d = document.createElement("div")
+    const d = document.createElement("button")
+    d.type = "button"
     d.className = "dot" + (i === 0 ? " active" : "")
+    d.addEventListener("click", () => {
+      const w = elTrack.clientWidth
+      if (!w) return
+      elTrack.scrollTo({ left: w * i, behavior: "smooth" })
+      setActiveDot(i)
+    })
     elDots.appendChild(d)
   }
 }
@@ -100,6 +109,3 @@ const renderSlider = (items) => {
 }
 
 load()
-
-const slider = Array.isArray(d.slider) ? d.slider : []
-renderSlider(slider)

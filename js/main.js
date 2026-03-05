@@ -1,5 +1,5 @@
 import { db } from "./firebase-config.js"
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"
+import { collection, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"
 
 const elStage = document.getElementById("highlightStage")
 const elGrid = document.getElementById("productGrid")
@@ -124,13 +124,24 @@ const renderGrid = (items) => {
 }
 
 const loadProducts = async () => {
-  const qy = query(collection(db, "products"), orderBy("updatedAt", "desc"))
-  const snap = await getDocs(qy)
+  const qHighlight = query(
+    collection(db, "products"),
+    where("isHighlight", "==", true),
+    limit(3)
+  )
 
-  const all = []
-  snap.forEach((doc) => {
+  const qOthers = query(
+    collection(db, "products"),
+    where("isHighlight", "==", false)
+  )
+
+  const snapHighlight = await getDocs(qHighlight)
+  const snapOthers = await getDocs(qOthers)
+
+  const highlights = []
+  snapHighlight.forEach((doc) => {
     const d = doc.data() || {}
-    all.push({
+    highlights.push({
       id: doc.id,
       name: d.name,
       coverUrl: d.coverUrl,
@@ -143,8 +154,21 @@ const loadProducts = async () => {
     })
   })
 
-  const highlights = all.filter((x) => x.isHighlight).slice(0, 3)
-  const others = all.filter((x) => !x.isHighlight)
+  const others = []
+  snapOthers.forEach((doc) => {
+    const d = doc.data() || {}
+    others.push({
+      id: doc.id,
+      name: d.name,
+      coverUrl: d.coverUrl,
+      coverPath: d.coverPath,
+      priceOld: d.priceOld,
+      priceNew: d.priceNew,
+      isHighlight: Boolean(d.isHighlight),
+      detailText: d.detailText,
+      offerEnds: d.offerEnds
+    })
+  })
 
   renderHighlights(highlights)
   renderGrid(others)
